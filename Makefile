@@ -1,5 +1,5 @@
 CLEAN_SUBDIRS = src doc tests
-BUILD_SUBDIRS = src/threads src/userprog src/vm src/filesys
+BUILD_SUBDIRS = src/threads src/userprog src/vm src/examples src/filesys
 HAS_CTAGS := $(shell which ctags 2> /dev/null)
 
 

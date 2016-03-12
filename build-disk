@@ -1,0 +1,38 @@
+#!/bin/sh
+
+function pintos_cp {
+  pwd
+  pwd
+  echo "    Copying $1 to the disk"
+  ../../utils/pintos -p ../../examples/$1 -a $1 -- -q
+}
+
+function pintos_mkfs {
+  pwd
+  pwd
+  echo "Preparing the disk"
+
+  echo "  Creating disk (2MiB!)"
+  # Create new disk image
+  rm $1 2> /dev/null
+  ../../utils/pintos-mkdisk $1 --filesys-size=2 &> /dev/null
+  # Format
+  echo "  Formating disk"
+  ../../utils/pintos -- -f -q &> /dev/null
+
+  # copy programs
+  echo "  Copying programs"
+  pintos_cp 'insult'
+  pintos_cp 'pwd'
+  pintos_cp 'recursor'
+  pintos_cp 'cowsay'
+  pintos_cp 'interecho'
+}
+
+
+if cd src/userprog/build; then
+  pwd
+  pwd
+	pintos_mkfs 'filesys.dsk'
+	cd ../..
+fi #cd userprog/build
