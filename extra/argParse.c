@@ -3,19 +3,32 @@
 #include <stdlib.h>  // NULL
 #include <string.h>  // strtok
 
-
 int parse(char* command, /*out*/ int* argCount, /*out*/ char** argValues) {
 	printf("Parsing '%s'\n", command);
-
 	printf("Argv starts at %p\n", argValues);
+
+	const char s[2] = " ";
+	char *token;
+	token = strtok(command, s);
+	int c = 0;
 
 	printf("Program name:(%p) -> '%s'\n", (void*)token, token);
 
-
 	printf("Args:\n");
 	/* iterate over tokens */
-		printf("  * (%p) -> '%s'\n", (void*)token, token);
 
+	while (token != NULL) {
+		printf("  * (%p) -> '%s'\n", (void*)token, token);
+		argValues[c] = malloc(sizeof(char));
+		if (argValues[c] == NULL) {
+			break;
+		} else {
+			strcpy(argValues[c], token);
+			c++;
+			token = strtok(NULL, s);
+		}
+	}
+	*argCount = c;
 	printf("---\n");
 
 	return 0; /* OK */
