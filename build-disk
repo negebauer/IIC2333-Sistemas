@@ -1,13 +1,13 @@
 #!/bin/sh
 
-function pintos_cp {
+pintos_cp() {
   pwd
   pwd
   echo "    Copying $1 to the disk"
   ../../utils/pintos -p ../../examples/$1 -a $1 -- -q
 }
 
-function pintos_mkfs {
+pintos_mkfs() {
   pwd
   pwd
   echo "Preparing the disk"
