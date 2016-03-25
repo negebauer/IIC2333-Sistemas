@@ -1,4 +1,4 @@
-#include "userprog/process.h"
+#include "process.h"
 #include <debug.h>
 #include <inttypes.h>
 #include <round.h>
@@ -38,6 +38,10 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
+
+  char *save_ptr;
+  file_name = strtok_r((char*) file_name, " ", &save_ptr);
+
   /* Create a new thread to execute FILE_NAME. */
   tid = thread_create (file_name, PRI_DEFAULT, start_process, fn_copy);
   if (tid == TID_ERROR)
@@ -54,12 +58,15 @@ start_process (void *file_name_)
   struct intr_frame if_;
   bool success;
 
+  char *save_ptr;
+  file_name = strtok_r((char*) file_name, " ", &save_ptr);
+
   /* Initialize interrupt frame and load executable. */
   memset (&if_, 0, sizeof if_);
   if_.gs = if_.fs = if_.es = if_.ds = if_.ss = SEL_UDSEG;
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
-  success = load (file_name, &if_.eip, &if_.esp);
+  success = load (file_name, &if_.eip, &if_.esp, &save_ptr);
 
   /* If load failed, quit. */
   palloc_free_page (file_name);
@@ -206,7 +213,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
    and its initial stack pointer into *ESP.
    Returns true if successful, false otherwise. */
 bool
-load (const char *file_name, void (**eip) (void), void **esp)
+load (const char *file_name, void (**eip) (void), void **esp, char** save_ptr)
 {
   struct thread *t = thread_current ();
   struct Elf32_Ehdr ehdr;
@@ -302,7 +309,7 @@ load (const char *file_name, void (**eip) (void), void **esp)
     }
 
   /* Set up stack. */
-  if (!setup_stack (esp))
+  if (!setup_stack (esp, file_name, save_ptr))
     goto done;
 
   /* Start address. */
@@ -427,7 +434,7 @@ load_segment (struct file *file, off_t ofs, uint8_t *upage,
 /* Create a minimal stack by mapping a zeroed page at the top of
    user virtual memory. */
 static bool
-setup_stack (void **esp)
+setup_stack (void **esp, const char* file_name, char** save_ptr)
 {
   uint8_t *kpage;
   bool success = false;
@@ -437,11 +444,64 @@ setup_stack (void **esp)
     {
       success = install_page (((uint8_t *) PHYS_BASE) - PGSIZE, kpage, true);
       if (success)
-        // *esp = PHYS_BASE;
-        *esp = PHYS_BASE-12;  // FIXME: this is a crappy trick to run programs that ignore arguments
+        *esp = PHYS_BASE;
       else
         palloc_free_page (kpage);
     }
+
+  int wordSize = 4; // tamaño de palabra (4 bytes)
+
+  char* token; // Variable donde guardaremos (direccion de memoria) cada palabra del comando
+  char **argValues = malloc(wordSize*sizeof(char*)); // Arreglo donde almacenaremos el comando separado
+  int argCount = 0, argValues_size = 2; // Contador de argumentos, y una cantidad por defecto de argumentos = 2
+
+  token = (char*) file_name; // Seteamos la primera direccion de memoria de la primera palabra del comando
+
+  // Iteramos sobre todos los token
+	while (token != NULL) {
+    *esp -= strlen(token) + 1; // Disminuimos el puntero del stack en el largo del token (igual al largo en bytes) + 1 (\0)
+    argValues[argCount] = *esp; // Asignamos el puntero del stack donde guardaremos la palabra, al arreglo de los valores
+		argCount++; // Agregamos uno al contador de argumentos
+    if (argCount >= argValues_size){ // Si la cantidad de argumentos supera el numero por defecto:
+      argValues_size *= 2;// Lo duplicamos
+      argValues = realloc(argValues, argValues_size*sizeof(char*)); // Y reasignamos el espacio en memoria
+    }
+    memcpy(*esp, token, strlen(token) + 1); // Copiamos el token en el stack
+		token = strtok_r(NULL, " ", save_ptr);
+	}
+
+  // Agregamos un argumento nulo, requerido por el estandar de C
+  argValues[argCount] = 0;
+
+  // Redondeamos el puntero del stack a un multiplo del tamaño de las palabras (4), para un mejor desempelño
+  int i = (size_t) *esp % wordSize;
+  if (i != 0) {
+    *esp -= i;
+    memcpy(*esp, &argValues[argCount], i);
+  }
+
+  // Pusheamos en el stack las direcciones de memoria de cada argumento
+  for (i = argCount; i >= 0; i--) {
+    *esp -= sizeof(char*);
+    memcpy(*esp, &argValues[i], sizeof(char*));
+  }
+
+  // Pusheamos la direccion de memoria de la direccion de memoria del ultimo argumento pusheado
+  token = *esp;
+  *esp -= sizeof(char**);
+  memcpy(*esp, &token, sizeof(char**));
+
+  // Pusheamos la cantidad de argumentos
+  *esp -= sizeof(int);
+  memcpy(*esp, &argCount, sizeof(int));
+
+  // Finalmente pusheamos la direccion de retorno falsa
+  *esp -= sizeof(void*);
+  memcpy(*esp, &argValues[argCount], sizeof(void*));
+
+  // Y liberamos el espacio ocupado temporalmente
+  free(argValues);
+
   return success;
 }
 
