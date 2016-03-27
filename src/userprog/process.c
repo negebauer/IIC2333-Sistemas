@@ -38,7 +38,7 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-
+  
   char *save_ptr;
   file_name = strtok_r((char*) file_name, " ", &save_ptr);
 
@@ -67,7 +67,6 @@ start_process (void *file_name_)
   if_.cs = SEL_UCSEG;
   if_.eflags = FLAG_IF | FLAG_MBS;
   success = load (file_name, &if_.eip, &if_.esp, &save_ptr);
-
   /* If load failed, quit. */
   palloc_free_page (file_name);
   if (!success)
