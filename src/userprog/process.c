@@ -19,7 +19,7 @@
 #include "threads/vaddr.h"
 
 static thread_func start_process NO_RETURN;
-static bool load (const char *cmdline, void (**eip) (void), void **esp);
+static bool load (const char *cmdline, void (**eip) (void), void **esp, char** save_ptr);
 
 /* Starts a new thread running a user program loaded from
    FILENAME.  The new thread may be scheduled (and may even exit)
@@ -38,7 +38,7 @@ process_execute (const char *file_name)
     return TID_ERROR;
   strlcpy (fn_copy, file_name, PGSIZE);
 
-  
+
   char *save_ptr;
   file_name = strtok_r((char*) file_name, " ", &save_ptr);
 
@@ -201,7 +201,10 @@ struct Elf32_Phdr
 #define PF_W 2          /* Writable. */
 #define PF_R 4          /* Readable. */
 
-static bool setup_stack (void **esp);
+#define WORD_SIZE 4
+#define DEFAULT_ARGV 2
+
+static bool setup_stack (void **esp, const char* file_name, char** save_ptr);
 static bool validate_segment (const struct Elf32_Phdr *, struct file *);
 static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
                           uint32_t read_bytes, uint32_t zero_bytes,
@@ -226,6 +229,8 @@ load (const char *file_name, void (**eip) (void), void **esp, char** save_ptr)
   if (t->pagedir == NULL)
     goto done;
   process_activate ();
+
+
 
   /* Open executable file. */
   file = filesys_open (file_name);
@@ -448,11 +453,11 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
         palloc_free_page (kpage);
     }
 
-  int wordSize = 4; // tamaño de palabra (4 bytes)
 
   char* token; // Variable donde guardaremos (direccion de memoria) cada palabra del comando
-  char **argValues = malloc(wordSize*sizeof(char*)); // Arreglo donde almacenaremos el comando separado
-  int argCount = 0, argValues_size = 2; // Contador de argumentos, y una cantidad por defecto de argumentos = 2
+  char **argValues = malloc(DEFAULT_ARGV*sizeof(char*)); // Arreglo donde almacenaremos el comando separado
+  int argCount = 0; // Contador de argumentos
+  int argValues_size = DEFAULT_ARGV;
 
   token = (char*) file_name; // Seteamos la primera direccion de memoria de la primera palabra del comando
 
@@ -473,8 +478,8 @@ setup_stack (void **esp, const char* file_name, char** save_ptr)
   argValues[argCount] = 0;
 
   // Redondeamos el puntero del stack a un multiplo del tamaño de las palabras (4), para un mejor desempelño
-  int i = (size_t) *esp % wordSize;
-  if (i != 0) {
+  int i = (size_t) *esp % WORD_SIZE;
+  if (i) {
     *esp -= i;
     memcpy(*esp, &argValues[argCount], i);
   }

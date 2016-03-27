@@ -18,7 +18,7 @@ syscall_write(struct intr_frame *f)
   int *p = f->esp;  // Stack pointer (x86 registers http://www.scs.stanford.edu/05au-cs240c/lab/i386/s02_03.htm)
 
   // FIXME: This is (probably) displaced because of the -12 on process.c:442 (setup_stack)
-  int sp_offset = 4;  // after removing the -=12, decreasing this should fix this
+  int sp_offset = 0;  // after removing the -=12, decreasing this should fix this
 
   int file_descriptor =         p[sp_offset+1];
   char        *buffer = (char*) p[sp_offset+2];
@@ -107,8 +107,7 @@ syscall_handler (struct intr_frame *f)
 
 
 void
-syscall_init (void) 
+syscall_init (void)
 {
   intr_register_int (0x30, 3, INTR_ON, &syscall_handler, "syscall");
 }
-
