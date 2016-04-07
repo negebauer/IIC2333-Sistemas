@@ -14,6 +14,29 @@ enum thread_status
     THREAD_DYING        /* About to be destroyed. */
   };
 
+/* Available scheduling algorithms */
+enum scheduling_algorithm
+  {
+    SCH_FCFS,           /* First Come, First Serve. Such FIFO, much wow. */
+    SCH_MLFQS,          /* PintOS default scheduling assignment. */
+    SCH_PRIORITIZED,    /* 2014/1, Hw1, Pt1 */
+    SCH_SIMPLE_CFS,     /* 2014/1, Hw1, Pt2 */
+    SCH_LOTTERY,        /* 2014/2, Hw1, Pt1 */
+    SCH_DYN_LOTTERY,    /* 2014/2, Hw1, Pt2 */
+    SCH_DQ,             /* 2015/1, Hw1, Pt1 */
+    SCH_N_QUEUES        /* 2015/2, Hw1, Pt1 */
+  };
+
+
+/* Chooses and returns the next thread to be scheduled.  Should
+   return a thread from the run queue, unless the run queue is
+   empty.  (If the running thread can continue running, then it
+   will be in the run queue.)  If the run queue is empty, return
+   idle_thread. */
+typedef struct thread *(*next_thread_function)(void);
+
+int queueCount;
+
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
@@ -102,10 +125,16 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
   };
 
-/* If false (default), use round-robin scheduler.
-   If true, use multi-level feedback queue scheduler.
-   Controlled by kernel command-line option "-o mlfqs". */
-extern bool thread_mlfqs;
+/* This selects the used scheduling algorithm.
+ * 'Hot Swapping' function is not required and also not expected.
+ * Selection is controlled by the kernel command-line
+ *  option "-o SCHEDULER" where SCHEDULER can be:
+ *   - "FCFS" or "FIFO" (default)
+ *   - "prioritized"
+ *   - "sCFS"
+ */
+extern enum scheduling_algorithm selected_scheduler;
+void pick_scheduler(void);
 
 void thread_init (void);
 void thread_start (void);

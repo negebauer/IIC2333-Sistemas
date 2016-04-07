@@ -8,6 +8,9 @@ priority-donate-multiple priority-donate-multiple2			\
 priority-donate-nest priority-donate-sema priority-donate-lower		\
 priority-fifo priority-preempt priority-sema priority-condvar		\
 priority-donate-chain                                                   \
+priority-swap                                                   \
+priority-high-load                                              \
+priority-high-load-yield                                        \
 mlfqs-load-1 mlfqs-load-60 mlfqs-load-avg mlfqs-recent-1 mlfqs-fair-2	\
 mlfqs-fair-20 mlfqs-nice-2 mlfqs-nice-10 mlfqs-block)
 
@@ -28,6 +31,9 @@ tests/threads_SRC += tests/threads/priority-donate-lower.c
 tests/threads_SRC += tests/threads/priority-fifo.c
 tests/threads_SRC += tests/threads/priority-preempt.c
 tests/threads_SRC += tests/threads/priority-sema.c
+tests/threads_SRC += tests/threads/priority-swap.c
+tests/threads_SRC += tests/threads/priority-high-load.c
+tests/threads_SRC += tests/threads/priority-high-load-yield.c
 tests/threads_SRC += tests/threads/priority-condvar.c
 tests/threads_SRC += tests/threads/priority-donate-chain.c
 tests/threads_SRC += tests/threads/mlfqs-load-1.c

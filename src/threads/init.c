@@ -254,8 +254,26 @@ parse_options (char **argv)
 #endif
       else if (!strcmp (name, "-rs"))
         random_init (atoi (value));
+      else if (!strcmp (name, "-FCFS"))
+        selected_scheduler = SCH_FCFS;
+      else if (!strcmp (name, "-FIFO"))
+        selected_scheduler = SCH_FCFS;
       else if (!strcmp (name, "-mlfqs"))
-        thread_mlfqs = true;
+        selected_scheduler = SCH_MLFQS;
+      else if (!strcmp (name, "-prioritized"))
+        selected_scheduler = SCH_PRIORITIZED;
+      else if (!strcmp (name, "-sCFS"))
+        selected_scheduler = SCH_SIMPLE_CFS;
+      else if (!strcmp (name, "-lottery"))
+        selected_scheduler = SCH_LOTTERY;
+      else if (!strcmp (name, "-dynLottery"))
+        selected_scheduler = SCH_DYN_LOTTERY;
+      else if (!strcmp (name, "-dq"))
+        selected_scheduler = SCH_DQ;
+      else if (!strcmp (name, "-nq")) {
+        selected_scheduler = SCH_N_QUEUES;
+        queueCount = atoi(value);
+      }
 #ifdef USERPROG
       else if (!strcmp (name, "-ul"))
         user_page_limit = atoi (value);
@@ -378,7 +396,15 @@ usage (void)
 #endif
 #endif
           "  -rs=SEED           Set random number seed to SEED.\n"
+          "  -FCFS              Use First Come First Serve (aka FIFO) scheduler (default).\n"
+          "  -FIFO              Use First Come First Serve (aka FIFO) scheduler (default).\n"
           "  -mlfqs             Use multi-level feedback queue scheduler.\n"
+          "  -prioritized       Use a prioritized scheduler.\n"
+          "  -sCFS              Use a simple implementation of the Completely Fair Scheduler.\n"
+          "  -lottery           Use prioritized Lottery as the CPU Scheduler\n"
+          "  -dynLottery        Use a dynamic prioritized Lottery as the CPU Scheduler\n"
+          "  -dq                Use a dual queue CPU Scheduler\n"
+          "  -nq=N              Use N Queues\n"
 #ifdef USERPROG
           "  -ul=COUNT          Limit user memory to COUNT pages.\n"
 #endif

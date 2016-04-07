@@ -37,7 +37,7 @@ test_priority_fifo (void)
   int i, cnt;
 
   /* This test does not work with the MLFQS. */
-  ASSERT (!thread_mlfqs);
+  ASSERT (selected_scheduler != SCH_MLFQS);
 
   /* Make sure our priority is the default. */
   ASSERT (thread_get_priority () == PRI_DEFAULT);

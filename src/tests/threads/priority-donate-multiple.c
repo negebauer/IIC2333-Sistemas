@@ -3,7 +3,7 @@
    acquiring one of the locks and thus donate their priority to
    the main thread.  The main thread releases the locks in turn
    and relinquishes its donated priorities.
-   
+
    Based on a test originally submitted for Stanford's CS 140 in
    winter 1999 by Matt Franklin <startled@leland.stanford.edu>,
    Greg Hutchins <gmh@leland.stanford.edu>, Yu Ping Hu
@@ -19,12 +19,12 @@ static thread_func a_thread_func;
 static thread_func b_thread_func;
 
 void
-test_priority_donate_multiple (void) 
+test_priority_donate_multiple (void)
 {
   struct lock a, b;
 
   /* This test does not work with the MLFQS. */
-  ASSERT (!thread_mlfqs);
+  ASSERT (selected_scheduler != SCH_MLFQS);
 
   /* Make sure our priority is the default. */
   ASSERT (thread_get_priority () == PRI_DEFAULT);
@@ -55,7 +55,7 @@ test_priority_donate_multiple (void)
 }
 
 static void
-a_thread_func (void *lock_) 
+a_thread_func (void *lock_)
 {
   struct lock *lock = lock_;
 
@@ -66,7 +66,7 @@ a_thread_func (void *lock_)
 }
 
 static void
-b_thread_func (void *lock_) 
+b_thread_func (void *lock_)
 {
   struct lock *lock = lock_;
 
