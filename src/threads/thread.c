@@ -574,7 +574,7 @@ schedule (void)
   if (cur != next && next->priority > cur->priority)
     prev = switch_threads (cur, next);
   else
-    prev = cur;
+    prev = next;
   thread_schedule_tail (prev);
 }
 
