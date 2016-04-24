@@ -571,10 +571,11 @@ schedule (void)
   ASSERT (cur->status != THREAD_RUNNING);
   ASSERT (is_thread (next));
 
-  if (cur != next)
+  if (cur != next && next->priority > cur->priority)
     prev = switch_threads (cur, next);
-  if (prev->priority > next->priority)
-    thread_schedule_tail (prev);
+  else
+    prev = cur;
+  thread_schedule_tail (prev);
 }
 
 /* Returns a tid to use for a new thread. */
