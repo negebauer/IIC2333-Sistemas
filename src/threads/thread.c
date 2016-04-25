@@ -201,9 +201,6 @@ thread_create (const char *name, int priority,
   /* Add to run queue. */
   thread_unblock (t);
 
-  if (t->priority > thread_get_priority())
-    thread_yield();
-
   return tid;
 }
 
@@ -240,6 +237,7 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
+// TODO
   list_push_back (&ready_list, &t->elem);
   t->status = THREAD_READY;
   intr_set_level (old_level);
@@ -344,7 +342,7 @@ thread_set_priority (int new_priority)
   curr = thread_current();
   ASSERT(curr->status == THREAD_RUNNING);
   curr->priority = new_priority;
-  next = next_thread_to_run();
+  next = list_entry(list_front(&ready_list),struct thread, elem);
   if (next->priority > curr->priority)
     thread_yield();
 }
