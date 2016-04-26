@@ -3,13 +3,13 @@
 #include <string.h>
 #include <stdio.h>
 
-struct test 
+struct test
   {
     const char *name;
     test_func *function;
   };
 
-static const struct test tests[] = 
+static const struct test tests[] =
   {
     {"alarm-single", test_alarm_single},
     {"alarm-multiple", test_alarm_multiple},
@@ -27,7 +27,10 @@ static const struct test tests[] =
     {"priority-donate-chain", test_priority_donate_chain},
     {"priority-fifo", test_priority_fifo},
     {"priority-preempt", test_priority_preempt},
+    {"priority-high-load", test_priority_high_load},
+    {"priority-high-load-yield", test_priority_high_load_yield},
     {"priority-sema", test_priority_sema},
+    {"priority-swap", test_priority_swap},
     {"priority-condvar", test_priority_condvar},
     {"mlfqs-load-1", test_mlfqs_load_1},
     {"mlfqs-load-60", test_mlfqs_load_60},
@@ -44,7 +47,7 @@ static const char *test_name;
 
 /* Runs the test named NAME. */
 void
-run_test (const char *name) 
+run_test (const char *name)
 {
   const struct test *t;
 
@@ -64,10 +67,10 @@ run_test (const char *name)
    prefixing the output by the name of the test
    and following it with a new-line character. */
 void
-msg (const char *format, ...) 
+msg (const char *format, ...)
 {
   va_list args;
-  
+
   printf ("(%s) ", test_name);
   va_start (args, format);
   vprintf (format, args);
@@ -80,10 +83,10 @@ msg (const char *format, ...)
    and following it with a new-line character,
    and then panics the kernel. */
 void
-fail (const char *format, ...) 
+fail (const char *format, ...)
 {
   va_list args;
-  
+
   printf ("(%s) FAIL: ", test_name);
   va_start (args, format);
   vprintf (format, args);
@@ -95,7 +98,7 @@ fail (const char *format, ...)
 
 /* Prints a message indicating the current test passed. */
 void
-pass (void) 
+pass (void)
 {
   printf ("(%s) PASS\n", test_name);
 }
