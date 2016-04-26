@@ -718,7 +718,7 @@ schedule (void)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
 
-  // check_priority();
+  check_priority();
 }
 
 /* Returns a tid to use for a new thread. */
