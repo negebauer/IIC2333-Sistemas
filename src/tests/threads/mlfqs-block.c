@@ -25,7 +25,7 @@ test_mlfqs_block (void)
   int64_t start_time;
   struct lock lock;
   
-  ASSERT (thread_mlfqs);
+  ASSERT (selected_scheduler == SCH_MLFQS);
 
   msg ("Main thread acquiring lock.");
   lock_init (&lock);

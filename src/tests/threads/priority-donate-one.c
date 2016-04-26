@@ -19,12 +19,12 @@ static thread_func acquire1_thread_func;
 static thread_func acquire2_thread_func;
 
 void
-test_priority_donate_one (void) 
+test_priority_donate_one (void)
 {
   struct lock lock;
 
   /* This test does not work with the MLFQS. */
-  ASSERT (!thread_mlfqs);
+  ASSERT (selected_scheduler != SCH_MLFQS);
 
   /* Make sure our priority is the default. */
   ASSERT (thread_get_priority () == PRI_DEFAULT);
@@ -43,7 +43,7 @@ test_priority_donate_one (void)
 }
 
 static void
-acquire1_thread_func (void *lock_) 
+acquire1_thread_func (void *lock_)
 {
   struct lock *lock = lock_;
 
@@ -54,7 +54,7 @@ acquire1_thread_func (void *lock_)
 }
 
 static void
-acquire2_thread_func (void *lock_) 
+acquire2_thread_func (void *lock_)
 {
   struct lock *lock = lock_;
 
