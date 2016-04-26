@@ -208,7 +208,6 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-
   check_priority();
 
   return tid;
@@ -247,9 +246,21 @@ thread_unblock (struct thread *t)
 
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
-  list_push_back (&ready_list, &t->elem);
+  // list_push_back (&ready_list, &t->elem);
+  list_insert_ordered(&ready_list, &t->elem, &cmp_thread_priority, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
+}
+
+/* Orders threads according to priority */
+bool
+ cmp_thread_priority (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED)
+{
+  struct thread *thread1 = list_entry(t1, struct thread, elem);
+  struct thread *thread2 = list_entry(t2, struct thread, elem);
+  if (thread1->priority > thread2->priority)
+    return true;
+  return false;
 }
 
 /* Returns the name of the running thread. */
@@ -318,7 +329,8 @@ thread_yield (void)
 
   old_level = intr_disable ();
   if (cur != idle_thread)
-    list_push_back (&ready_list, &cur->elem);
+    // list_push_back (&ready_list, &cur->elem);
+    list_insert_ordered(&ready_list, &cur->elem, &cmp_thread_priority, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -494,6 +506,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   old_level = intr_disable ();
   list_push_back (&all_list, &t->allelem);
+  //list_insert_ordered(&all_list, &t->allelem, &cmp_thread_priority, NULL);
   intr_set_level (old_level);
 }
 
@@ -704,6 +717,8 @@ schedule (void)
   if (cur != next)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
+
+  // check_priority();
 }
 
 /* Returns a tid to use for a new thread. */
