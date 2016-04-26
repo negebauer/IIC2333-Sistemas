@@ -350,13 +350,16 @@ void
 thread_set_priority (int new_priority)
 {
   // thread_current ()->priority = new_priority;
-  struct thread *curr = thread_current;
-  struct thread *next = list_entry(&ready_list, struct thread, elem);
-  ASSERT(new_priority <= PRI_MIN && new_priority >= PRI_MAX);
+  struct thread *curr = thread_current();
+  ASSERT(new_priority >= PRI_MIN && new_priority <= PRI_MAX);
   curr->priority = new_priority;
   ASSERT(curr->status == THREAD_RUNNING);
-  if (next->priority > curr->priority)
-    thread_yield();
+  if (!list_empty(&ready_list))
+  {
+    struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
+    if (next->priority > curr->priority)
+      thread_yield();
+  }
 }
 
 /* Returns the current thread's priority. */
