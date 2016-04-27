@@ -117,10 +117,10 @@ struct thread
     struct list_elem elem;              /* List element. */
 
     /* Priority donation */
-    int base_priority;                  /* Initial Priority */
-    int priority;                       /* Priority. */
-    struct lock* wait_on_lock;          /* lock for sleeping or waiting */
-    struct list donations;              /* List for priority donations */
+    int base_priority;                  /* Initial Priority (without donations) */
+    int priority;                       /* Priority including donations */
+    struct lock* waiting_on;            /* lock that thread is waiting to acquire */
+    struct list priority_donations;     /* Sorted-List for priority donations */
     struct list_elem donation_elem;     /* Actual donation element */
 
 #ifdef USERPROG
@@ -173,19 +173,25 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
+void check_priority(void);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
 void thread_foreach (thread_action_func *, void *);
 
+void thread_calculate_priority(struct thread *t);
+void thread_donate_priority(struct thread *t);
+bool cmp_thread_priority (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED);
+
 int thread_get_priority (void);
 void thread_set_priority (int);
+void thread_recall_donation(struct thread *t);
 
 int thread_get_nice (void);
 void thread_set_nice (int);
 int thread_get_recent_cpu (void);
 int thread_get_load_avg (void);
 
-bool cmp_thread_priority (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED);
+
 
 #endif /* threads/thread.h */
