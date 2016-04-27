@@ -123,6 +123,18 @@ struct thread
 
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
+
+    /* Statistics*/
+    int blocked_time;
+    int blocked_times;
+    int running_time;
+    int running_times;
+
+    int ready_state_time;
+    int quantum_run_out_times;
+    int expropied_times;
+
+
   };
 
 /* This selects the used scheduling algorithm.
