@@ -110,11 +110,18 @@ struct thread
     enum thread_status status;          /* Thread state. */
     char name[16];                      /* Name (for debugging purposes). */
     uint8_t *stack;                     /* Saved stack pointer. */
-    int priority;                       /* Priority. */
+
     struct list_elem allelem;           /* List element for all threads list. */
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+
+    /* Priority donation */
+    int base_priority;                  /* Initial Priority */
+    int priority;                       /* Priority. */
+    struct lock* wait_on_lock;          /* lock for sleeping or waiting */
+    struct list donations;              /* List for priority donations */
+    struct list_elem donation_elem;     /* Actual donation element */
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -125,12 +132,12 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
 
     /* Statistics*/
-    int blocked_time;
+    int64_t blocked_time;
     int blocked_times;
-    int running_time;
+    int64_t running_time;
     int running_times;
 
-    int ready_state_time;
+    int64_t ready_state_time;
     int quantum_run_out_times;
     int expropied_times;
 

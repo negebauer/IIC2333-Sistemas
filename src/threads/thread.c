@@ -19,6 +19,7 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
+#define DEPTH_LIMIT 8
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -148,7 +149,7 @@ thread_tick (void)
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
 
-    
+
 }
 
 /* Prints thread statistics. */
@@ -361,13 +362,63 @@ thread_foreach (thread_action_func *func, void *aux)
 void
 check_priority()
 {
-  if (!list_empty(&ready_list))
+  if (list_empty(&ready_list))
+    return;
+
+
+  struct thread *curr = thread_current();
+  struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
+
+  if (intr_context())
   {
-    struct thread *curr = thread_current();
-    struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
-    if (next->priority > curr->priority)
-      thread_yield();
+    thread_ticks++;
+    if (curr->priority < next->priority || (thread_ticks >= TIME_SLICE && curr->priority == next->priority))
+      intr_yield_on_return();
+
   }
+
+  if (next->priority > curr->priority)
+    thread_yield();
+}
+
+/* Priority donation */
+void donate_priority (void)
+{
+  int depth = 0;
+  struct thread *curr = thread_current();
+  struct lock *lock = curr->wait_on_lock;
+
+  while (lock && depth < DEPTH_LIMIT)
+  {
+    depth++;
+
+    // If lock is not helded, return
+    if (!lock->holder)
+      return;
+
+    if (lock->holder->priority >= curr->priority)
+      return;
+
+    lock->holder->priority = curr->priority;
+    curr = lock->holder;
+    lock = curr->wait_on_lock;
+
+
+  }
+}
+
+/* See if there is a donation available */
+void refresh_priority (void)
+{
+  struct thread *curr = thread_current();
+  curr->priority = curr->base_priority;
+
+  if (list_empty(&curr->donations))
+    return;
+
+  struct thread* donate_thread = list_entry(list_front(&curr->donations), struct thread, donation_elem);
+  if (donate_thread->priority > curr->priority)
+    curr->priority = donate_thread->priority;
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
@@ -376,10 +427,20 @@ thread_set_priority (int new_priority)
 {
   // thread_current ()->priority = new_priority;
   struct thread *curr = thread_current();
+  int old_priority = curr->priority;
   ASSERT(new_priority >= PRI_MIN && new_priority <= PRI_MAX);
-  curr->priority = new_priority;
   ASSERT(curr->status == THREAD_RUNNING);
-  check_priority();
+  curr->base_priority = new_priority;
+
+  refresh_priority();
+
+  // If new priority is greater, donate it
+  if (old_priority < curr->priority)
+    donate_priority();
+
+  // If new priority is lower, check its priority
+  if (old_priority > curr->priority)
+    check_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -512,6 +573,11 @@ init_thread (struct thread *t, const char *name, int priority)
   list_push_back (&all_list, &t->allelem);
   //list_insert_ordered(&all_list, &t->allelem, &cmp_thread_priority, NULL);
   intr_set_level (old_level);
+
+  // Initialization for priority donation
+  t->base_priority = priority;
+  t->wait_on_lock = NULL;
+  list_init(&t->donations);
 }
 
 /* Allocates a SIZE-byte frame at the top of thread T's stack and
@@ -722,7 +788,7 @@ schedule (void)
     prev = switch_threads (cur, next);
   thread_schedule_tail (prev);
 
-  check_priority();
+  //check_priority();
 }
 
 /* Returns a tid to use for a new thread. */
