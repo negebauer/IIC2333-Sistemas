@@ -114,6 +114,7 @@ thread_init (void)
 void
 thread_start (void)
 {
+
   /* Create the idle thread. */
   struct semaphore idle_started;
   sema_init (&idle_started, 0);
@@ -124,6 +125,9 @@ thread_start (void)
 
   /* Wait for the idle thread to initialize idle_thread. */
   sema_down (&idle_started);
+
+  context_changes = 0;
+  process_count = 1;
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -132,6 +136,21 @@ void
 thread_tick (void)
 {
   struct thread *t = thread_current ();
+
+  if (t->status == THREAD_RUNNING)
+  {
+    t->running_time++;
+  }
+
+  if (t->status == THREAD_BLOCKED)
+  {
+    t->blocked_time++;
+  }
+
+  if (t->status == THREAD_READY)
+  {
+    t->ready_state_time++;
+  }
 
   /* Update statistics. */
   if (t == idle_thread)
@@ -145,7 +164,10 @@ thread_tick (void)
 
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
+  {
+    t->quantum_run_out_times++;
     intr_yield_on_return ();
+  }
 
 
 }
@@ -177,6 +199,7 @@ tid_t
 thread_create (const char *name, int priority,
                thread_func *function, void *aux)
 {
+  process_count++;
   struct thread *t;
   struct kernel_thread_frame *kf;
   struct switch_entry_frame *ef;
@@ -213,6 +236,16 @@ thread_create (const char *name, int priority,
   sf = alloc_frame (t, sizeof *sf);
   sf->eip = switch_entry;
   sf->ebp = 0;
+
+  t->blocked_time = 0;
+  t->blocked_times = 0;
+  t->running_time = 0;
+  t->running_times = 0;
+
+  t->ready_state_time = 0;
+  t->quantum_run_out_times = 0;
+  t->expropied_times = 0;
+
 
   // ????
   intr_set_level(old_level);
@@ -347,6 +380,28 @@ thread_tid (void)
 void
 thread_exit (void)
 {
+  struct thread *t = thread_current();
+  printf("-------------------------------------------\n");
+  printf("%s finished:\n", t->name);
+  printf("Times blocked: %d (%d ticks)\n", t->blocked_times, t->blocked_time);
+  printf("Times running: %d (%d ticks)\n", t->running_times, t->running_time);
+  printf("Time ready status: %d ticks\n", t->ready_state_time);
+  printf("Quantums run out times: %d\n", t->quantum_run_out_times);
+  printf("Expropied times: %d\n", t->expropied_times);
+  printf("-------------------------------------------\n");
+
+  ready_waiting_total += t->running_time;
+  average_ready_waiting = ready_waiting_total / process_count;
+
+  if (t->tid == initial_thread->tid)
+  {
+    printf("===========================================\n");
+    printf("Context changes: %d\n", context_changes);
+    printf("Executed processes: %d\n", process_count);
+    printf("Average ready status waiting: %d\n", average_ready_waiting);
+    printf("===========================================\n");
+  }
+
   ASSERT (!intr_context ());
 
 #ifdef USERPROG
@@ -372,6 +427,9 @@ thread_yield (void)
   enum intr_level old_level;
 
   ASSERT (!intr_context ());
+
+  cur->expropied_times++;
+  context_changes++;
 
   old_level = intr_disable ();
   if (cur != idle_thread)
@@ -652,6 +710,7 @@ init_thread (struct thread *t, const char *name, int priority)
 
   memset (t, 0, sizeof *t);
   t->status = THREAD_BLOCKED;
+  t->blocked_times++;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
   t->priority = priority;
@@ -833,7 +892,7 @@ thread_schedule_tail (struct thread *prev)
 
   /* Mark us as running. */
   cur->status = THREAD_RUNNING;
-
+  cur->running_times++;
   /* Start new time slice. */
   thread_ticks = 0;
 

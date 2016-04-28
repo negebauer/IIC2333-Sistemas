@@ -131,18 +131,25 @@ struct thread
     /* Owned by thread.c. */
     unsigned magic;                     /* Detects stack overflow. */
 
-    /* Statistics*/
-    int64_t blocked_time;
+    /* Local statistics*/
+    int16_t blocked_time;
     int blocked_times;
-    int64_t running_time;
+    int16_t running_time;
     int running_times;
 
-    int64_t ready_state_time;
+    int16_t ready_state_time;
     int quantum_run_out_times;
     int expropied_times;
 
 
   };
+
+/* Global statistics */
+int context_changes;
+int process_count;
+int ready_waiting_total;
+float average_ready_waiting;
+
 
 /* This selects the used scheduling algorithm.
  * 'Hot Swapping' function is not required and also not expected.
