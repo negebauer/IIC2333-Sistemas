@@ -106,6 +106,7 @@ thread_init (void)
   initial_thread = running_thread ();
   init_thread (initial_thread, "main", PRI_DEFAULT);
   initial_thread->status = THREAD_RUNNING;
+  initial_thread->running_times++;
   initial_thread->tid = allocate_tid ();
 }
 
@@ -272,6 +273,7 @@ thread_block (void)
   ASSERT (intr_get_level () == INTR_OFF);
 
   thread_current ()->status = THREAD_BLOCKED;
+  thread_current ()->blocked_times++;
   schedule ();
 }
 
