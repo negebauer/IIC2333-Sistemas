@@ -131,6 +131,7 @@ thread_start (void)
   process_count = 1;
   ready_waiting_total = 0;
   average_ready_waiting = 0.0;
+  global_ticks = 0;
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -140,20 +141,7 @@ thread_tick (void)
 {
   struct thread *t = thread_current ();
 
-  if (t->status == THREAD_RUNNING)
-  {
-    t->running_time++;
-  }
-
-  if (t->status == THREAD_BLOCKED)
-  {
-    t->blocked_time++;
-  }
-
-  if (t->status == THREAD_READY)
-  {
-    t->ready_state_time++;
-  }
+  global_ticks++;
 
   /* Update statistics. */
   if (t == idle_thread)
@@ -248,6 +236,7 @@ thread_create (const char *name, int priority,
   t->ready_state_time = 0;
   t->quantum_run_out_times = 0;
   t->expropied_times = 0;
+  t->global_ticks_entry = 0;
 
 
   // ????
@@ -428,6 +417,7 @@ void
 thread_yield (void)
 {
   struct thread *cur = thread_current ();
+  cur->running_time += global_ticks - cur->global_ticks_entry;
   enum intr_level old_level;
 
   ASSERT (!intr_context ());
@@ -897,6 +887,7 @@ thread_schedule_tail (struct thread *prev)
 
   /* Mark us as running. */
   cur->status = THREAD_RUNNING;
+  cur->global_ticks_entry = global_ticks;
 
   /* Start new time slice. */
   thread_ticks = 0;

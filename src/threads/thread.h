@@ -140,6 +140,7 @@ struct thread
     int ready_state_time;
     int quantum_run_out_times;
     int expropied_times;
+    int global_ticks_entry;
 
 
   };
@@ -149,6 +150,7 @@ int context_changes;
 int process_count;
 int ready_waiting_total;
 int average_ready_waiting;
+int global_ticks;
 
 
 /* This selects the used scheduling algorithm.
