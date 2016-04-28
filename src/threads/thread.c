@@ -128,6 +128,8 @@ thread_start (void)
 
   context_changes = 0;
   process_count = 1;
+  ready_waiting_total = 0;
+  average_ready_waiting = 0;
 }
 
 /* Called by the timer interrupt handler at each timer tick.
@@ -391,13 +393,13 @@ thread_exit (void)
   printf("-------------------------------------------\n");
 
   ready_waiting_total += t->running_time;
-  average_ready_waiting = ready_waiting_total / process_count;
 
-  if (t->tid == initial_thread->tid)
+  if (t->name == initial_thread->name)
   {
     printf("===========================================\n");
     printf("Context changes: %d\n", context_changes);
     printf("Executed processes: %d\n", process_count);
+    average_ready_waiting = ready_waiting_total / process_count;
     printf("Average ready status waiting: %d\n", average_ready_waiting);
     printf("===========================================\n");
   }

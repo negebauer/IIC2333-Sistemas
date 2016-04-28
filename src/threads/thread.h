@@ -148,7 +148,7 @@ struct thread
 int context_changes;
 int process_count;
 int ready_waiting_total;
-float average_ready_waiting;
+int average_ready_waiting;
 
 
 /* This selects the used scheduling algorithm.
