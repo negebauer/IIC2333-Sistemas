@@ -399,7 +399,7 @@ thread_exit (void)
     printf("===========================================\n");
     printf("Context changes: %d\n", context_changes);
     printf("Executed processes: %d\n", process_count);
-    average_ready_waiting = (double)ready_waiting_total / (double)process_count;
+    average_ready_waiting = ready_waiting_total /  process_count;
     printf("Average ready status waiting: %d\n", average_ready_waiting);
     printf("===========================================\n");
   }
