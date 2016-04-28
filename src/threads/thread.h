@@ -173,7 +173,7 @@ const char *thread_name (void);
 
 void thread_exit (void) NO_RETURN;
 void thread_yield (void);
-void check_priority(void);
+void thread_yield_to_max(void);
 
 /* Performs some operation on thread t, given auxiliary data AUX. */
 typedef void thread_action_func (struct thread *t, void *aux);
@@ -181,7 +181,7 @@ void thread_foreach (thread_action_func *, void *);
 
 void thread_calculate_priority(struct thread *t);
 void thread_donate_priority(struct thread *t);
-bool cmp_thread_priority (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED);
+bool thread_priority_cmp (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED);
 
 int thread_get_priority (void);
 void thread_set_priority (int);

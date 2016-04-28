@@ -19,7 +19,6 @@
    Used to detect stack overflow.  See the big comment at the top
    of thread.h for details. */
 #define THREAD_MAGIC 0xcd6abf4b
-#define DEPTH_LIMIT 8
 
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
@@ -78,7 +77,6 @@ static void schedule (void);
 void thread_schedule_tail (struct thread *prev);
 static tid_t allocate_tid (void);
 
-void thread_foreach (thread_action_func *func, void *aux);
 
 /* Initializes the threading system by transforming the code
    that's currently running into a thread.  This can't work in
@@ -221,7 +219,7 @@ thread_create (const char *name, int priority,
 
   /* Add to run queue. */
   thread_unblock (t);
-  check_priority();
+  thread_yield_to_max();
 
   return tid;
 }
@@ -242,6 +240,50 @@ thread_block (void)
   schedule ();
 }
 
+/* Orders threads according to priority */
+bool
+ thread_priority_cmp (const struct list_elem *t1, const struct list_elem *t2, void *aux UNUSED)
+{
+  return list_entry (t1, struct thread, elem)->priority >
+         list_entry (t2, struct thread, elem)->priority;
+}
+
+/* Return the maximal priority of all threads, or -1 if
+   no other threads exist. */
+static int
+thread_max_priority (void)
+{
+  /* We need to disable interrupts here so that the race (detailed
+     below) doesn't occur. */
+  enum intr_level old_level;
+  old_level = intr_disable ();
+  int return_value = -1;
+
+  if (list_begin (&ready_list) != list_end (&ready_list))
+    {
+      /* Race condition exists here if interrupts are not disabled:
+         if there is only one other thread ready and that thread
+         interleaves here, then blocks, then the ready list will
+         be empty when we run again, even though we think it's got
+         something in it, and will end up reading bogus memory below */
+      struct thread *t = list_entry (list_begin (&ready_list),
+                                     struct thread, elem);
+      return_value = t->priority;
+    }
+
+  intr_set_level (old_level);
+  return return_value;
+}
+
+/* Check to see if we're one of the highest-priority threads.
+   If not, yield. */
+void
+thread_yield_to_max (void)
+{
+  if (thread_max_priority () > thread_get_priority ())
+    thread_yield ();
+}
+
 /* Transitions a blocked thread T to the ready-to-run state.
    This is an error if T is not blocked.  (Use thread_yield() to
    make the running thread ready.)
@@ -260,21 +302,12 @@ thread_unblock (struct thread *t)
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   // list_push_back (&ready_list, &t->elem);
-  list_insert_ordered(&ready_list, &t->elem, &cmp_thread_priority, NULL);
+  list_insert_ordered(&ready_list, &t->elem, thread_priority_cmp, NULL);
   t->status = THREAD_READY;
   intr_set_level (old_level);
 }
 
-/* Orders threads according to priority */
-bool
- cmp_thread_priority (const struct list_elem *t1, const struct list_elem *t2, void *unused UNUSED)
-{
-  struct thread *thread1 = list_entry(t1, struct thread, elem);
-  struct thread *thread2 = list_entry(t2, struct thread, elem);
-  if (thread1->priority > thread2->priority)
-    return true;
-  return false;
-}
+
 
 /* Returns the name of the running thread. */
 const char *
@@ -343,7 +376,7 @@ thread_yield (void)
   old_level = intr_disable ();
   if (cur != idle_thread)
     // list_push_back (&ready_list, &cur->elem);
-    list_insert_ordered(&ready_list, &cur->elem, &cmp_thread_priority, NULL);
+    list_insert_ordered(&ready_list, &cur->elem, thread_priority_cmp, NULL);
   cur->status = THREAD_READY;
   schedule ();
   intr_set_level (old_level);
@@ -366,19 +399,6 @@ thread_foreach (thread_action_func *func, void *aux)
     }
 }
 
-/* Checks if the current thread has lower priority than a new thread */
-void
-check_priority()
-{
-  if (list_empty(&ready_list))
-    return;
-
-  struct thread *curr = thread_current();
-  struct thread *next = list_entry(list_front(&ready_list), struct thread, elem);
-
-  if (next->priority > curr->priority)
-    thread_yield();
-}
 
 /* Return the maximum donated priority of a thread */
 static int thread_get_donated_priority(struct thread *t)
@@ -407,7 +427,7 @@ static void thread_reinsert_ready_list(struct thread *t)
   {
     ASSERT(intr_get_level() == INTR_OFF);
     list_remove(&t->elem);
-    list_insert_ordered(&ready_list, &t->elem, &cmp_thread_priority, NULL);
+    list_insert_ordered(&ready_list, &t->elem, thread_priority_cmp, NULL);
   }
 }
 
@@ -420,7 +440,7 @@ void thread_calculate_priority(struct thread *t)
   enum intr_level old_level = intr_disable();
 
   int donated_priority = thread_get_donated_priority(t);
-  if (donated_priority > t -> base_priority)
+  if (donated_priority > t->base_priority)
   {
     t->priority = donated_priority;
   }
@@ -439,7 +459,7 @@ thread_set_priority (int new_priority)
 {
   thread_current ()->base_priority = new_priority;
   thread_calculate_priority(thread_current());
-  check_priority();
+  thread_yield_to_max ();
 }
 
 /* Returns the current thread's priority. */
@@ -457,21 +477,6 @@ thread_donation_cmp (const struct list_elem *a,
 {
   return list_entry (a, struct thread, donation_elem)->priority >
          list_entry (b, struct thread, donation_elem)->priority;
-}
-
-/* Remove the given thread donation, assumes that it has already made a donation, and the donor doesn't need to recompute effective priority */
-void thread_recall_donation (struct thread *t)
-{
-    ASSERT(intr_get_level() == INTR_OFF);
-    ASSERT(is_thread(t));
-
-    /* Make sure to have made a donation */
-    if (t->donation_elem.next != NULL)
-    {
-      list_remove(&t->donation_elem);
-      t->donation_elem.next = NULL;
-    }
-
 }
 
 /* Recompute the priority of thread, and donate if necesary. recurssion */
@@ -499,7 +504,7 @@ void thread_donate_priority (struct thread *t)
         ASSERT(is_thread(waiter));
 
         /* Make donation */
-        list_insert_ordered(&waiter->priority_donations, &t->donation_elem, &thread_donation_cmp, NULL);
+        list_insert_ordered(&waiter->priority_donations, &t->donation_elem, thread_donation_cmp, NULL);
 
         t = waiter;
       }
@@ -514,6 +519,23 @@ void thread_donate_priority (struct thread *t)
     }
   }
 }
+
+/* Remove the given thread donation, assumes that it has already made a donation, and the donor doesn't need to recompute effective priority */
+void thread_recall_donation (struct thread *t)
+{
+    ASSERT(intr_get_level() == INTR_OFF);
+    ASSERT(is_thread(t));
+
+    /* Make sure to have made a donation */
+    if (t->donation_elem.next != NULL)
+    {
+      list_remove(&t->donation_elem);
+      t->donation_elem.next = NULL;
+    }
+
+}
+
+
 
 /* Sets the current thread's nice value to NICE. */
 void
@@ -632,10 +654,12 @@ init_thread (struct thread *t, const char *name, int priority)
   t->status = THREAD_BLOCKED;
   strlcpy (t->name, name, sizeof t->name);
   t->stack = (uint8_t *) t + PGSIZE;
+  t->priority = priority;
   t->base_priority = priority;
   t->magic = THREAD_MAGIC;
   // ????
   //old_level = intr_disable ();
+  list_init (&t->priority_donations);
   list_push_back (&all_list, &t->allelem);
   //list_insert_ordered(&all_list, &t->allelem, &cmp_thread_priority, NULL);
 
