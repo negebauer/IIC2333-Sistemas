@@ -132,12 +132,12 @@ struct thread
     unsigned magic;                     /* Detects stack overflow. */
 
     /* Local statistics*/
-    int16_t blocked_time;
+    int blocked_time;
     int blocked_times;
-    int16_t running_time;
+    int running_time;
     int running_times;
 
-    int16_t ready_state_time;
+    int ready_state_time;
     int quantum_run_out_times;
     int expropied_times;
 

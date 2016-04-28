@@ -271,9 +271,9 @@ thread_block (void)
 {
   ASSERT (!intr_context ());
   ASSERT (intr_get_level () == INTR_OFF);
-
-  thread_current ()->status = THREAD_BLOCKED;
   thread_current ()->blocked_times++;
+  thread_current ()->status = THREAD_BLOCKED;
+
   schedule ();
 }
 
@@ -891,12 +891,13 @@ void
 thread_schedule_tail (struct thread *prev)
 {
   struct thread *cur = running_thread ();
+  cur->running_times++;
 
   ASSERT (intr_get_level () == INTR_OFF);
 
   /* Mark us as running. */
   cur->status = THREAD_RUNNING;
-  cur->running_times++;
+
   /* Start new time slice. */
   thread_ticks = 0;
 
