@@ -143,6 +143,7 @@ struct thread
     int global_ticks_entry;
 
 
+
   };
 
 /* Global statistics */
