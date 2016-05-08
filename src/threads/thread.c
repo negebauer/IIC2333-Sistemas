@@ -62,7 +62,7 @@ static unsigned thread_ticks;   /* # of timer ticks since last yield. */
  *   - "prioritized"
  *   - "sCFS"
  */
-enum scheduling_algorithm selected_scheduler = SCH_FCFS;
+enum scheduling_algorithm selected_scheduler = SCH_PRIORITIZED;
 next_thread_function next_thread_to_run_function;
 
 static void kernel_thread (thread_func *, void *aux);
@@ -750,6 +750,16 @@ next_thread_to_run_mlfqs (void)
   return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
+bool most_pri (const struct list_elem *a,
+               const struct list_elem *b,
+               void *aux) {
+  struct thread *ta = list_entry (a, struct thread, elem);
+  struct thread *tb = list_entry (b, struct thread, elem);
+  ASSERT (is_thread (ta));
+  ASSERT (is_thread (tb));
+  return ta->priority > tb->priority;
+}
+
 /** Prioritized Scheduling
  *
  * Should avoid deadlocks when a priority process waits for another with
@@ -758,8 +768,7 @@ next_thread_to_run_mlfqs (void)
 static struct thread *
 next_thread_to_run_prioritized (void)
 {
-  //OLDFIXME: Actually it performs FCFS (FIFO).
-  //OLDTODO: Implement a prioritized scheduler.
+  list_sort (&ready_list, &most_pri, NULL);
   return list_entry (list_pop_front (&ready_list), struct thread, elem);
 }
 
