@@ -1,8 +1,11 @@
 #pragma once
+
 #include "stdlib.h"
 #include "stdio.h"
 
 #include "bit.h"
+
+#define uint unsigned int
 
 /*
  * Memory
@@ -19,12 +22,12 @@
 #define _off_mask  mask_right(_off_width)
 #define _off_size (1<<_off_width)
 /* Page index width */
-#define _pagID_width _adr_width - _off_width
+#define _pagID_width (_adr_width - _off_width)
 #define _pagID_mask  (~_off_mask)
 #define _pagID_size (1<<_pagID_width)
 /* Frame width */
-#define _frmID_width _mem_width - _off_width
-#define _frmID_mask  _mem_mask & _pagID_mask
+#define _frmID_width (_mem_width - _off_width)
+#define _frmID_mask  (_mem_mask & _pagID_mask)
 #define _frmID_size (1<<_frmID_width)
 
 
@@ -36,11 +39,11 @@ typedef struct TLB_entry_t {
 	int frame;      // NOTE: Mapping is irrelevant (for now)
 	// char dirty;  // No swap (=
 
-	//struct {
+	struct {
 		// TODO: extend TLB stats if needed
 		//char uses;
 		//int timestamp;
-	//} stats;
+	/} stats;
 } TLB_entry;
 /* TLB width */
 #define _tlb_size (tlb_memory / sizeof(TLB_entry))
@@ -60,9 +63,9 @@ Stats stats;
 TLB_entry TLB[_tlb_size];
 
 
-int vm_init();
+void vm_init();
 int vm_print_memory_layout();
 int vm_print_memory_stats();
 
-char vm_read(unsigned int page, unsigned int offset);
-void vm_write(unsigned int page, unsigned int offset, char data);
+char vm_read(uint page, uint offset);
+void vm_write(uint page, uint offset, char data);

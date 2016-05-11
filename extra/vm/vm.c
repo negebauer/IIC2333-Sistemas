@@ -2,16 +2,10 @@
 
 #include "vm.h"
 
-int vm_init_TLB() {
-	for(int i=0; i<_tlb_size; i++) {
-		TLB[i].page = i;
+void vm_init_TLB() {
+	for(uint i=0; i<_tlb_size; i++) {
+		TLB[i].page = -1;
 		TLB[i].frame = -1;
-
-		// Stats
-		//TLB[i].stats.uses = 0;
-		//TLB[i].stats.uses = -1;
-		//TLB[i].stats.timestamp = -1;
-	// TODO: init new TLB stats if needed
 	}
 }
 
@@ -27,7 +21,7 @@ void vm_hit(TLB_entry *entry) {
 /*
  * Updates the worst TLB entry with a new one.
  */
-void vm_miss(int page, int frame) {
+void vm_miss(uint page, uint frame) {
 	// Look for worst page 'w'
 
 	//TLB[w].page = page;
@@ -39,7 +33,7 @@ void vm_miss(int page, int frame) {
 /*
  * Initializes sim
  */
-int vm_init() {
+void vm_init() {
 	memory = (char*) calloc(_mem_size, sizeof(char));
 
 	stats.hits = 0;
@@ -55,7 +49,7 @@ int vm_init() {
  */
 int vm_in_tlb(int page, int *frame, int *idx) {
 	stats.time += tlb_time;
-	for(int i=0; i<_tlb_size; i++)
+	for(uint i=0; i<_tlb_size; i++)
 		if(TLB[i].page==page) {
 			*frame = TLB[i].frame;
 			*idx = i;
@@ -106,7 +100,7 @@ int vm_get_page_frame(int page) {
 /*
  * Reads memory data
  */
-char vm_read(unsigned int page, unsigned int offset) {
+char vm_read(uint page, uint offset) {
 	int frame = vm_get_page_frame(page);
 	frame  &= _frmID_mask;
 	offset &= _off_mask;
@@ -117,7 +111,7 @@ char vm_read(unsigned int page, unsigned int offset) {
 /*
  * Writes memory data
  */
-void vm_write(unsigned int page, unsigned int offset, char data) {
+void vm_write(uint page, uint offset, char data) {
 	int frame = vm_get_page_frame(page);
 	frame  &= _frmID_mask;
 	offset &= _off_mask;
@@ -139,7 +133,7 @@ void print_mask(int mask, char *l, char *s, char *r) {
 			past=1;
 		}
 		else
-			printf(past? r:l);
+			printf("%s", past? r:l);
 		if(i && i%8==0)
 			printf(" ");
 	}

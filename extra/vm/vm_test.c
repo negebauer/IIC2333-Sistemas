@@ -1,10 +1,10 @@
 #include "vm.h"
 
-unsigned int data_per_page = 4;
-unsigned int remap_p(unsigned int x) {
+uint data_per_page = 4;
+uint remap_p(uint x) {
 	return x/data_per_page;
 }
-unsigned int remap_o(unsigned int x) {
+uint remap_o(uint x) {
 	return x%data_per_page;
 }
 
