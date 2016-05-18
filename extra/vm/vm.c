@@ -155,11 +155,11 @@ int vm_print_memory_layout() {
 	printf("  * PageID:        ");
 	print_mask(_pagID_mask, ".", "#", "-");
 	printf("  (%d pages)\n",     (1<<(_pagID_width)));
-	
+
 	printf("  * Offset:        ");
 	print_mask(_off_mask, ".", "#", "-");
 	printf("  (%d Bytes/Page)\n", _off_size);
-	
+
 	printf("  * FrameID:       ");
 	print_mask(_frmID_mask, ".", "#", "-");
 	printf("  (%d frames)\n",     _frmID_size);
@@ -188,4 +188,3 @@ int vm_print_memory_stats() {
 	else
 		printf(" (%.2fx SLOWER!!)\n", amt/mem_time);
 }
-

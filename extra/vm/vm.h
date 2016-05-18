@@ -43,7 +43,7 @@ typedef struct TLB_entry_t {
 		// TODO: extend TLB stats if needed
 		//char uses;
 		//int timestamp;
-	/} stats;
+	} stats;
 } TLB_entry;
 /* TLB width */
 #define _tlb_size (tlb_memory / sizeof(TLB_entry))
