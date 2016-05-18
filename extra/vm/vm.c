@@ -2,40 +2,30 @@
 
 #include "vm.h"
 
-int vm_init_TLB() {
-	for(int i=0; i<_tlb_size; i++) {
+void vm_init_TLB() {
+	for(uint i=0; i<_tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
-
-		// Stats
-		TLB[i].stats.uses = 0;
-		TLB[i].stats.timestamp = 0;
-	// TODO: init new TLB stats if needed
 	}
 }
 
 /*
  * Updates the hit TLB entry.
  */
-void vm_hit(tlb_entry *entry) {
+void vm_hit(TLB_entry *entry) {
 	// TODO: update TLB entry
-	entry->stats.uses++;
-	entry->stats.timestamp=stats.accesses;
+	//entry->stats.uses++;
+	//entry->stats.timestamp=stats.accesses;
 }
+
 /*
  * Updates the worst TLB entry with a new one.
  */
-void vm_miss(int page, int frame) {
-	// TODO: replace the 'worst' TLB entry?
+void vm_miss(uint page, uint frame) {
+	// Look for worst page 'w'
 
-	//int w = 0;
-	//for(int i=0; i<_tlb_size; i++)
-		//if(worse(TLB[i], TLB[w])) {
-		//  w=i;
-		//}
-
-	//Set new entry
-	//TLB[w] = ...
+	//TLB[w].page = page;
+	//TLB[w]...
 }
 
 
@@ -43,7 +33,7 @@ void vm_miss(int page, int frame) {
 /*
  * Initializes sim
  */
-int vm_init() {
+void vm_init() {
 	memory = (char*) calloc(_mem_size, sizeof(char));
 
 	stats.hits = 0;
@@ -59,7 +49,7 @@ int vm_init() {
  */
 int vm_in_tlb(int page, int *frame, int *idx) {
 	stats.time += tlb_time;
-	for(int i=0; i<_tlb_size; i++)
+	for(uint i=0; i<_tlb_size; i++)
 		if(TLB[i].page==page) {
 			*frame = TLB[i].frame;
 			*idx = i;
@@ -76,6 +66,9 @@ int vm_in_tlb(int page, int *frame, int *idx) {
  * Computes Page's real location on memory.
  */
 int vm_get_page_frame(int page) {
+	//printf("page: %08x > ", page);
+	page %= _pagID_size;
+	//printf("%08x\n", page);
 	stats.accesses++;
 
 	/* Search TLB */
@@ -94,6 +87,7 @@ int vm_get_page_frame(int page) {
 	else {
 		// =)
 		stats.hits++;
+		assert(idx < _tlb_size);
 		vm_hit(&TLB[idx]);
 	}
 
@@ -106,14 +100,10 @@ int vm_get_page_frame(int page) {
 /*
  * Reads memory data
  */
-char vm_read(int page, int offset) {
-	page   &= _pagID_size-1;
-	offset &= _off_size-1;
-	assert(page < _pagID_size);
-	//printf("%d-page_read\n", page);
-
+char vm_read(uint page, uint offset) {
 	int frame = vm_get_page_frame(page);
-	frame &= _frmID_mask;
+	frame  &= _frmID_mask;
+	offset &= _off_mask;
 
 	return memory[frame+offset];
 }
@@ -121,14 +111,10 @@ char vm_read(int page, int offset) {
 /*
  * Writes memory data
  */
-void vm_write(int page, int offset, char data) {
-	page   &= _pagID_mask;
-	offset &= _off_mask;
-	assert(page < _pagID_size);
-	//printf("%d-page_write\n", page);
-
+void vm_write(uint page, uint offset, char data) {
 	int frame = vm_get_page_frame(page);
-	frame &= _frmID_mask;
+	frame  &= _frmID_mask;
+	offset &= _off_mask;
 
 	memory[frame+offset] = data;
 }
@@ -147,7 +133,7 @@ void print_mask(int mask, char *l, char *s, char *r) {
 			past=1;
 		}
 		else
-			printf(past? r:l);
+			printf("%s", past? r:l);
 		if(i && i%8==0)
 			printf(" ");
 	}
@@ -179,7 +165,7 @@ int vm_print_memory_layout() {
 	printf("  (%d frames)\n",     _frmID_size);
 
 	printf("  * Page->Frame table: %dMB (>>> CPU cache :/)\n", sizeof(page_to_frame)/1024/1024);
-	printf("  * TLB size: %d entries\n", _tlb_size);
+	printf("  * TLB size: %dB (holds %d %d-Bytes entries)\n", tlb_memory, _tlb_size, sizeof(TLB_entry));
 }
 
 int vm_print_memory_stats() {
@@ -190,9 +176,9 @@ int vm_print_memory_stats() {
 	double mr = stats.misses;
 	hr /= stats.accesses/100;
 	mr /= stats.accesses/100;
-	printf("  * Accesses: %d\n", stats.accesses);
-	printf("  * Hits:     %d (%.2f%%)\n", stats.hits, hr);
-	printf("  * Misses:   %d (%.2f%%)\n", stats.misses, mr);
+	printf("  * Accesses: %llu\n", stats.accesses);
+	printf("  * Hits:     %llu (%.2f%%)\n", stats.hits, hr);
+	printf("  * Misses:   %llu (%.2f%%)\n", stats.misses, mr);
 
 	double amt = stats.time;
 	amt /= stats.accesses;
