@@ -2,7 +2,25 @@
 
 #include "vm.h"
 
+/*  Methods
+
+0 = Just put it in TLB[0]
+  * Accesses: 8781835
+  * Hits:     8069493 (91.89%)
+  * Misses:   712342 (8.11%)
+  * Avg time:  9.11 (10.98x faster)
+
+1 = Random
+	* Accesses: 8781837
+	* Hits:     8074757 (91.95%)
+	* Misses:   707080 (8.05%)
+	* Avg time:  9.05 (11.05x faster)
+
+2 = Something else?
+*/
+
 void vm_init_TLB() {
+	method = 1;
 	for(uint i=0; i<_tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
@@ -23,7 +41,16 @@ void vm_hit(TLB_entry *entry) {
  */
 void vm_miss(uint page, uint frame) {
 	// Look for worst page 'w'
-
+	switch (method) {
+		case 0:
+			TLB[0].page = page;
+			TLB[0].frame = frame;
+		case 1:
+			TLB[rand() % 128].page = page;
+			TLB[rand() % 128].frame = frame;
+		default:
+			break;
+	}
 	//TLB[w].page = page;
 	//TLB[w]...
 }

@@ -1,5 +1,7 @@
 #pragma once
 
+int method;
+
 #include "stdlib.h"
 #include "stdio.h"
 
