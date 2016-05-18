@@ -25,7 +25,7 @@
 */
 
 void vm_init_TLB() {
-	method = 0;
+	method = 1;
 	for(uint i=0; i<_tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
