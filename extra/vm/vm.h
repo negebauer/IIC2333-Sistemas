@@ -43,7 +43,7 @@ typedef struct TLB_entry_t {
 
 	struct {
 		// TODO: extend TLB stats if needed
-		//char uses;
+    int uses;
 		//int timestamp;
 	} stats;
 } TLB_entry;

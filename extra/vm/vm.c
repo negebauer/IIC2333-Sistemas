@@ -4,24 +4,28 @@
 
 /*  Methods
 
-0 = Just put it in TLB[0]
+0 = Just put it in TLB[0]:
+  * Accesses: 8781841
+  * Hits:     7940996 (90.43%)
+  * Misses:   840845 (9.57%)
+  * Avg time:  10.57 (9.46x faster)
+
+1 = Random:
   * Accesses: 8781835
-  * Hits:     8069493 (91.89%)
-  * Misses:   712342 (8.11%)
-  * Avg time:  9.11 (10.98x faster)
+  * Hits:     7948664 (90.51%)
+  * Misses:   833171 (9.49%)
+  * Avg time:  10.49 (9.54x faster)
 
-1 = Random
+2 = Remove least used:
 	* Accesses: 8781837
-	* Hits:     8074757 (91.95%)
-	* Misses:   707080 (8.05%)
-	* Avg time:  9.05 (11.05x faster)
-
-2 = Something else?
+	* Hits:     7847097 (89.36%)
+	* Misses:   934740 (10.64%)
+	* Avg time:  11.64 (8.59x faster)
 
 */
 
 void vm_init_TLB() {
-	method = 3;
+	method = 0;
 	for(uint i=0; i<_tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
@@ -33,8 +37,13 @@ void vm_init_TLB() {
  */
 void vm_hit(TLB_entry *entry) {
 	// TODO: update TLB entry
-	//entry->stats.uses++;
 	//entry->stats.timestamp=stats.accesses;
+	switch (method) {
+		case 2:
+			entry->stats.uses++;
+		default:
+			break;
+	}
 }
 
 /*
@@ -49,8 +58,19 @@ void vm_miss(uint page, uint frame) {
 		case 1:
 			TLB[rand() % _tlb_size].page = page;
 			TLB[rand() % _tlb_size].frame = frame;
-		case 2:
-			break;
+		case 2: {
+			int table_index = 0;
+			int min = stats.accesses;
+			for(int i=0; i<_tlb_size; i++) {
+				int uses = TLB[i].stats.uses;
+				if (uses < min) {
+					table_index = i;
+					min = uses;
+				}
+			}
+			TLB[table_index].page = page;
+			TLB[table_index].frame = frame;
+		}
 		default:
 			break;
 	}
