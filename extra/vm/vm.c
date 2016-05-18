@@ -46,8 +46,8 @@ void vm_miss(uint page, uint frame) {
 			TLB[0].page = page;
 			TLB[0].frame = frame;
 		case 1:
-			TLB[rand() % 128].page = page;
-			TLB[rand() % 128].frame = frame;
+			TLB[rand() % _tlb_size].page = page;
+			TLB[rand() % _tlb_size].frame = frame;
 		default:
 			break;
 	}
