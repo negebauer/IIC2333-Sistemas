@@ -17,10 +17,11 @@
 	* Avg time:  9.05 (11.05x faster)
 
 2 = Something else?
+
 */
 
 void vm_init_TLB() {
-	method = 1;
+	method = 3;
 	for(uint i=0; i<_tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
@@ -48,6 +49,8 @@ void vm_miss(uint page, uint frame) {
 		case 1:
 			TLB[rand() % _tlb_size].page = page;
 			TLB[rand() % _tlb_size].frame = frame;
+		case 2:
+			break;
 		default:
 			break;
 	}
