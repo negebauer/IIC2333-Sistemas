@@ -1,4 +1,5 @@
 #include "assert.h"
+//#include "time.h"
 
 #include "vm.h"
 
@@ -22,11 +23,25 @@
 	* Misses:   934740 (10.64%)
 	* Avg time:  11.64 (8.59x faster)
 
+3 = Remove most used:
+	* Accesses: 8781835
+	* Hits:     6643842 (75.65%)
+	* Misses:   2137993 (24.35%)
+	* Avg time:  25.35 (3.95x faster)
+
+4 = Remove Least Recently Used
+	* Accesses: 8781835
+	* Hits:     7865534 (89.57%)
+	* Misses:   916301 (10.43%)
+	* Avg time:  11.43 (8.75x faster)
+
+5 =
+
 */
 
 void vm_init_TLB() {
-	method = 1;
-	for(uint i=0; i<_tlb_size; i++) {
+	method = 4;
+	for(uint i = 0; i < _tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
 	}
@@ -41,6 +56,10 @@ void vm_hit(TLB_entry *entry) {
 	switch (method) {
 		case 2:
 			entry->stats.uses++;
+
+		case 4:
+			entry->stats.last_used_time = stats.time;
+
 		default:
 			break;
 	}
@@ -55,14 +74,17 @@ void vm_miss(uint page, uint frame) {
 		case 0:
 			TLB[0].page = page;
 			TLB[0].frame = frame;
+
 		case 1:
 			TLB[rand() % _tlb_size].page = page;
 			TLB[rand() % _tlb_size].frame = frame;
+
 		case 2: {
 			int table_index = 0;
 			int min = stats.accesses;
-			for(int i=0; i<_tlb_size; i++) {
-				int uses = TLB[i].stats.uses;
+			int uses;
+			for(int i = 0; i < _tlb_size; i++) {
+				uses = TLB[i].stats.uses;
 				if (uses < min) {
 					table_index = i;
 					min = uses;
@@ -71,6 +93,38 @@ void vm_miss(uint page, uint frame) {
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
 		}
+
+		case 3: {
+			int table_index = 0;
+			int max = stats.accesses;
+			int uses;
+			for(int i = 0; i < _tlb_size; i++) {
+				uses = TLB[i].stats.uses;
+				if (uses > max) {
+					table_index = i;
+					max = uses;
+				}
+			}
+			TLB[table_index].page = page;
+			TLB[table_index].frame = frame;
+		}
+
+		case 4: {
+			int table_index = 0;
+			int max_unused_time = 0;
+			int time_unused;
+			for(int i = 0; i < _tlb_size; i++) {
+				time_unused = stats.time - TLB[i].stats.last_used_time;
+				if (time_unused > max_unused_time) {
+					table_index = i;
+					max_unused_time = time_unused;
+				}
+			}
+			TLB[table_index].page = page;
+			TLB[table_index].frame = frame;
+			TLB[table_index].stats.last_used_time = stats.time;
+		}
+
 		default:
 			break;
 	}

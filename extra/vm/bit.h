@@ -9,4 +9,3 @@
 #define mask_left(l)  (~0 << (BITS-l))
 #define mask_right(r) (~(~0 << r))
 #define mask_range(w) (~(~0 << m) << n)
-
