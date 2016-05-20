@@ -5,7 +5,7 @@
 
 /*  Methods
 
-0 = Just put it in TLB[0]:
+0 = FIFO:
   * Accesses: 8781841
   * Hits:     7940996 (90.43%)
   * Misses:   840845 (9.57%)
@@ -17,7 +17,7 @@
   * Misses:   833171 (9.49%)
   * Avg time:  10.49 (9.54x faster)
 
-2 = Remove least used:
+2 = Remove least used: (remover la menos usada)
 	* Accesses: 8781837
 	* Hits:     7847097 (89.36%)
 	* Misses:   934740 (10.64%)
@@ -25,17 +25,17 @@
 
 3 = Remove most used:
 	* Accesses: 8781835
-	* Hits:     6643842 (75.65%)
-	* Misses:   2137993 (24.35%)
-	* Avg time:  25.35 (3.95x faster)
+	* Hits:     7851850 (89.41%)
+	* Misses:   929985 (10.59%)
+	* Avg time:  11.59 (8.63x faster)
 
-4 = Remove Least Recently Used
+4 = Remove Least Recently Used (remover la que se uso hace mas tiempo)
 	* Accesses: 8781835
 	* Hits:     7865534 (89.57%)
 	* Misses:   916301 (10.43%)
 	* Avg time:  11.43 (8.75x faster)
 
-5 =
+5 = 
 
 */
 
@@ -92,6 +92,7 @@ void vm_miss(uint page, uint frame) {
 			}
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
+			TLB[table_index].stats.uses++;
 		}
 
 		case 3: {
@@ -107,6 +108,7 @@ void vm_miss(uint page, uint frame) {
 			}
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
+			TLB[table_index].stats.uses++;
 		}
 
 		case 4: {
