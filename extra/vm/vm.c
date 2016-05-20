@@ -214,8 +214,8 @@ int vm_print_memory_layout() {
 	print_mask(_frmID_mask, ".", "#", "-");
 	printf("  (%d frames)\n",     _frmID_size);
 
-	printf("  * Page->Frame table: %dMB (>>> CPU cache :/)\n", sizeof(page_to_frame)/1024/1024);
-	printf("  * TLB size: %dB (holds %d %d-Bytes entries)\n", tlb_memory, _tlb_size, sizeof(TLB_entry));
+	printf("  * Page->Frame table: %luMB (>>> CPU cache :/)\n", sizeof(page_to_frame)/1024/1024);
+	printf("  * TLB size: %dB (holds %lu %lu-Bytes entries)\n", tlb_memory, _tlb_size, sizeof(TLB_entry));
 }
 
 int vm_print_memory_stats() {
