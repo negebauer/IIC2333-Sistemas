@@ -124,16 +124,18 @@ void vm_miss(uint page, uint frame) {
 
 		case 4: {
 			int table_index = 0;
-			int max_priority = 0;
 			float time_unused, uses;
 			float priority;
+			time_unused = stats.time - TLB[0].stats.last_used_time;
+			uses = TLB[0].stats.uses;
+			float min_priority = uses + (10 / time_unused);
 			for(int i = 0; i < _tlb_size; i++) {
 				time_unused = stats.time - TLB[i].stats.last_used_time;
 				uses = TLB[i].stats.uses;
-				priority = uses + (1 / time_unused);//calcular prioridad
-				if (priority > max_priority) {
+				priority = uses + (10 / time_unused);//calcular prioridad
+				if (priority < min_priority) {
 					table_index = i;
-					max_priority = priority;
+					min_priority = priority;
 				}
 			}
 			TLB[table_index].page = page;
