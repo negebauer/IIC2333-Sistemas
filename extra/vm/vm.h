@@ -4,6 +4,7 @@ int method;
 
 #include "stdlib.h"
 #include "stdio.h"
+#include "stdbool.h"
 
 #include "bit.h"
 
@@ -45,6 +46,8 @@ typedef struct TLB_entry_t {
 		// TODO: extend TLB stats if needed
     int uses;
 		int last_used_time;
+		//bool referenced;
+		//bool second_chance;
 		//int timestamp;
 	} stats;
 } TLB_entry;

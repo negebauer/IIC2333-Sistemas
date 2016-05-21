@@ -3,44 +3,52 @@
 
 #include "vm.h"
 
+#define LIMIT_TIME_UNUSED 20
+
 /*  Methods
 
 0 = FIFO:
-  * Accesses: 8781841
-  * Hits:     7940996 (90.43%)
-  * Misses:   840845 (9.57%)
-  * Avg time:  10.57 (9.46x faster)
+	* Accesses: 8781835
+	* Hits:     7947484 (90.50%)
+	* Misses:   834351 (9.50%)
+	* Avg time:  10.50 (9.52x faster)
 
 1 = Random:
-  * Accesses: 8781835
-  * Hits:     7948664 (90.51%)
-  * Misses:   833171 (9.49%)
-  * Avg time:  10.49 (9.54x faster)
+	* Accesses: 8781839
+	* Hits:     7896204 (89.92%)
+	* Misses:   885635 (10.08%)
+	* Avg time:  11.08 (9.02x faster)
 
 2 = Remove least used: (remover la menos usada)
-	* Accesses: 8781837
-	* Hits:     7847097 (89.36%)
-	* Misses:   934740 (10.64%)
-	* Avg time:  11.64 (8.59x faster)
+	* Accesses: 8781835
+	* Hits:     7884792 (89.79%)
+	* Misses:   897043 (10.21%)
+	* Avg time:  11.21 (8.92x faster)
 
 3 = Remove most used:
 	* Accesses: 8781835
-	* Hits:     7851850 (89.41%)
-	* Misses:   929985 (10.59%)
-	* Avg time:  11.59 (8.63x faster)
+	* Hits:     6643842 (75.65%)
+	* Misses:   2137993 (24.35%)
+	* Avg time:  25.35 (3.95x faster)
 
-4 = Remove Least Recently Used (remover la que se uso hace mas tiempo)
+4 = Statistics merge, between Uses and time not used
+
+
+5 = Remove Least Recently Used (remover la que se uso hace mas tiempo)
 	* Accesses: 8781835
 	* Hits:     7865534 (89.57%)
 	* Misses:   916301 (10.43%)
 	* Avg time:  11.43 (8.75x faster)
 
-5 = 
+6 = Remove Least Recently Used, with second chance
+	* Accesses: 8781835
+	* Hits:     7859490 (89.50%)
+	* Misses:   922345 (10.50%)
+	* Avg time:  11.50 (8.69x faster)
 
 */
 
 void vm_init_TLB() {
-	method = 4;
 	for(uint i = 0; i < _tlb_size; i++) {
 		TLB[i].page = -1;
 		TLB[i].frame = -1;
@@ -53,16 +61,8 @@ void vm_init_TLB() {
 void vm_hit(TLB_entry *entry) {
 	// TODO: update TLB entry
 	//entry->stats.timestamp=stats.accesses;
-	switch (method) {
-		case 2:
-			entry->stats.uses++;
-
-		case 4:
-			entry->stats.last_used_time = stats.time;
-
-		default:
-			break;
-	}
+	entry->stats.uses++;
+	entry->stats.last_used_time = stats.time;
 }
 
 /*
@@ -70,14 +70,21 @@ void vm_hit(TLB_entry *entry) {
  */
 void vm_miss(uint page, uint frame) {
 	// Look for worst page 'w'
+	method = (stats.accesses % 5); // Random case between FIFO, RND, LFU, MFU and LRU
 	switch (method) {
 		case 0:
-			TLB[0].page = page;
-			TLB[0].frame = frame;
+			TLB[stats.accesses % _tlb_size].page = page;
+			TLB[stats.accesses % _tlb_size].frame = frame;
+			TLB[stats.accesses % _tlb_size].stats.uses++;
+			TLB[stats.accesses % _tlb_size].stats.last_used_time = stats.time;
+			break;
 
 		case 1:
 			TLB[rand() % _tlb_size].page = page;
 			TLB[rand() % _tlb_size].frame = frame;
+			TLB[rand() % _tlb_size].stats.uses++;
+			TLB[rand() % _tlb_size].stats.last_used_time = stats.time;
+			break;
 
 		case 2: {
 			int table_index = 0;
@@ -93,6 +100,8 @@ void vm_miss(uint page, uint frame) {
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
 			TLB[table_index].stats.uses++;
+			TLB[table_index].stats.last_used_time = stats.time;
+			break;
 		}
 
 		case 3: {
@@ -109,9 +118,32 @@ void vm_miss(uint page, uint frame) {
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
 			TLB[table_index].stats.uses++;
+			TLB[table_index].stats.last_used_time = stats.time;
+			break;
 		}
 
 		case 4: {
+			int table_index = 0;
+			int max_priority = 0;
+			float time_unused, uses;
+			float priority;
+			for(int i = 0; i < _tlb_size; i++) {
+				time_unused = stats.time - TLB[i].stats.last_used_time;
+				uses = TLB[i].stats.uses;
+				priority = uses + (1 / time_unused);//calcular prioridad
+				if (priority > max_priority) {
+					table_index = i;
+					max_priority = priority;
+				}
+			}
+			TLB[table_index].page = page;
+			TLB[table_index].frame = frame;
+			TLB[table_index].stats.last_used_time = stats.time;
+			TLB[table_index].stats.uses++;
+			break;
+		}
+
+		case 5: {
 			int table_index = 0;
 			int max_unused_time = 0;
 			int time_unused;
@@ -125,13 +157,49 @@ void vm_miss(uint page, uint frame) {
 			TLB[table_index].page = page;
 			TLB[table_index].frame = frame;
 			TLB[table_index].stats.last_used_time = stats.time;
+			TLB[table_index].stats.uses++;
+			break;
 		}
+
+		//case 6: {
+		//	int time_unused;
+		//	for(int i = 0; i < _tlb_size; i++) {
+		//		time_unused = stats.time - TLB[i].stats.last_used_time;
+		//		if (time_unused > (stats.time % LIMIT_TIME_UNUSED)) {
+		//			TLB[i].stats.referenced = true;
+		//		}
+		//	}
+
+		//	bool removed = false;
+		//	int i = 0;
+		//	while (!removed)
+		//	{
+		//		int index = i % _tlb_size;
+		//		if (TLB[index].stats.referenced)
+		//		{
+		//			if (!TLB[index].stats.second_chance)
+		//			{
+		//				TLB[index].page = page;
+		//				TLB[index].frame = frame;
+		//				TLB[index].stats.last_used_time = stats.time;
+		//				TLB[index].stats.uses++;
+		//				break;
+		//			}
+		//			else
+		//			{
+		//				TLB[index].stats.second_chance = false;
+		//			}
+		//		}
+		//		i++;
+		//	}
+
+		//	break;
+		//}
 
 		default:
 			break;
 	}
-	//TLB[w].page = page;
-	//TLB[w]...
+
 }
 
 
@@ -190,6 +258,7 @@ int vm_get_page_frame(int page) {
 
 		vm_miss(page, frame);
 	}
+
 	else {
 		// =)
 		stats.hits++;
@@ -201,8 +270,6 @@ int vm_get_page_frame(int page) {
 }
 
 
-
-
 /*
  * Reads memory data
  */
@@ -210,6 +277,7 @@ char vm_read(uint page, uint offset) {
 	int frame = vm_get_page_frame(page);
 	frame  &= _frmID_mask;
 	offset &= _off_mask;
+
 
 	return memory[frame+offset];
 }
